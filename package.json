@@ -5,8 +5,8 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "start": "node ./index.js & npx ts-node src/ws_server/index.ts",
-        "start:dev": "nodemon ./index.js",
+        "start": "npx ts-node index.ts",
+        "start:dev": "nodemon ./index.ts",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "Zeddikus97",
