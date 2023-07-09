@@ -15,8 +15,8 @@
     "noImplicitAny": true,                      
     "skipLibCheck": true                                
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "scripts"],
+  "include": ["src/ws_server/**/*"],
+  "exclude": ["node_modules", "front"],
   "lib":["exnext"],
   "ts-node": {
     "esm": true
