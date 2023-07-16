@@ -4,6 +4,7 @@ export interface IUser {
 }
 
 export interface IPlayer extends IUser{
+    readonly index: number;
     connectionID: string;
     isActive: boolean;
     inGame: boolean;

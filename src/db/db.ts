@@ -1,16 +1,21 @@
-import { IRoom } from '../models/Room.js';
-import { IPlayer, IUser } from '../types/User.js';
 import { IWSDatabase } from '../types/Database.js';
 import { Player } from '../models/User.js';
+import { Room } from '../models/Room.js';
+import { Game } from '../models/Game.js';
 
 export class WSDatabase implements IWSDatabase{
     users: Player[];
-    rooms: IRoom[];
+    rooms: Room[];
+    games: Game[];
+    roomsIndex: number;
 
     constructor(){
         this.users = [];
         this.rooms = [];
+        this.games = [];
+        this.roomsIndex = 0;
     }
+    
 
     getAll<T>(storage:Array<T>):Array<T>{
         return storage;
@@ -26,17 +31,65 @@ export class WSDatabase implements IWSDatabase{
 
     async getUserByName(name:string):Promise<Player | undefined>{
         const user = this.users.find((user: Player)=>{
-            user.name === name;
+            return user.name === name ? true : false
         })
         return user;
     } 
 
-    async getWinners(name:string):Promise<Player | undefined>{
+    async getUserByConnectionID(connectionID:string):Promise<Player>{
         const user = this.users.find((user: Player)=>{
-            user.name === name;
+            return user.connectionID===connectionID ? true : false
         })
-        return user;
+        return user as Player;
     } 
+
+    async getWinners():Promise<Array<{
+        name:string,
+        wins:number
+    }>>{
+        let winners : Array<{
+            name:string,
+            wins:number
+        }> = [];
+        this.users.forEach((user:Player)=>{
+            winners.push({
+                name:user.name,
+                wins:user.wins
+            })
+        })
+        return winners;
+    } 
+
+    async getRooms():Promise<Array<{
+        roomId:number,
+        roomUsers:Array<{ name:string, index:number }>
+    }>>{
+        let active_rooms : Array<{
+            roomId:number,
+            roomUsers:Array<{ name:string, index:number }>
+        }> = [];
+        this.rooms.forEach(async (room:Room)=>{
+            console.log('users', this.users)
+            let user = await this.getUserByConnectionID(room.firstPlayerID);
+            active_rooms.push({
+                roomId:room.index,
+                roomUsers:[{ 
+                    name:user.name,
+                    index:user.index
+                }]
+            })
+        })
+        return active_rooms;
+    } 
+
+
+    async checkRoomByConnectionID(connectionID:string):Promise<boolean>{
+        const room = this.rooms.find((room: Room)=>{
+            return room.firstPlayerID===connectionID ? true : false
+        })
+        return room ? true : false;
+    }
+
 
     async updatePlayersState(name:string, connectionID:string):Promise<Player>{
         const user_index = this.users.findIndex((user: Player)=>{
@@ -50,6 +103,12 @@ export class WSDatabase implements IWSDatabase{
         const newUser = new Player(name, password, this.users.length+1, connectionID)
         this.users.push(newUser);
         return newUser;
+    }
+
+    async createRoom(connectionID:string):Promise<void>{
+        const newRoom = new Room(this.roomsIndex, connectionID);
+        this.rooms.push(newRoom);
+        this.roomsIndex++;
     }
     /*
     getUsersList(name:string){

@@ -25,6 +25,7 @@ wss.on('connection', (ws: SpecifiedWebSocket) => {
       console.log(parsed_data, "data")
       if('type' in parsed_data){
         const result = await router(parsed_data as SocketData, ws.id, controller);
+        console.log(result, "result")
         if(result.length>0) await handleResult(result);
       }
       else{
@@ -42,8 +43,10 @@ wss.on('connection', (ws: SpecifiedWebSocket) => {
 
 async function handleResult(responces: Array<WSServerResponceHandler>) {
   for(let responce of responces){
+    console.log("responce", responce)
     if(responce.type==='all'){
       for(let client of wss.clients){
+        console.log('all', JSON.stringify(responce.data))
         client.send(JSON.stringify(responce.data))
       }
     }
@@ -52,6 +55,7 @@ async function handleResult(responces: Array<WSServerResponceHandler>) {
         let spec_elem = elem as SpecifiedWebSocket;
         return spec_elem.id===responce.connectionID ? true : false;
       })
+      console.log('client', JSON.stringify(responce.data))
       client?.send(JSON.stringify(responce.data))
     }
   }

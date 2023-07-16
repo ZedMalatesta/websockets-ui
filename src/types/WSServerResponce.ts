@@ -7,5 +7,5 @@ export interface WSServerResponce{
 export interface WSServerResponceHandler{
     type: 'single' | 'all';
     connectionID: string;
-    data: WSServerResponce
+    data: WSServerResponce | undefined
 }

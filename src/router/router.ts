@@ -6,14 +6,15 @@ import { WSServerResponce, WSServerResponceHandler } from "../types/WSServerResp
 export const router = async (ws_data: SocketData, connectionID:string, controller: GameController): Promise<Array<WSServerResponceHandler>> => {
     let responces:Array<WSServerResponce> = [];
     try{
-        let data = JSON.parse(ws_data.data);
+        let data = ws_data.data ? JSON.parse(ws_data.data) : '';
+        console.log('data', data)
         switch(ws_data.type) { 
             case 'reg': { 
                 return await controller.registrateUser(data, connectionID);
-               break; 
             } 
             case 'create_room':{
-                
+                console.log("started")
+                return await controller.createRoom(connectionID);
             }
             default: { 
                //statements; 
@@ -23,6 +24,7 @@ export const router = async (ws_data: SocketData, connectionID:string, controlle
          return []
     }
     catch(e){
+        console.log(e);
         return []
     }
 }
