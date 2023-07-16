@@ -2,15 +2,17 @@ import { WSDatabase } from '../db/db.js'
 import { WSServerResponceHandler, WSServerResponce } from '../types/WSServerResponce.js';
 import { MAIN_ID } from '../types/contants.js'
 import { Player } from '../models/User.js';
+import { Game } from '../models/Game.js'
 
-interface IGameController {
+interface IServerController {
     bdManager: WSDatabase;
 }
 
-type reg_res = { name:string, index:number, error:string, errorMessage:string}
-type update_room_res = Array<{ roomId: number, roomUsers: Array<{ name:string, index:number }> }>
+type reg_res = { name:string, index:number, error:string, errorMessage:string};
+type update_room_res = Array<{ roomId: number, roomUsers: Array<{ name:string, index:number }> }>;
+type create_game_res = { idGame: number, idPlayer: number };
 
-export class GameController implements IGameController{
+export class ServerController implements IServerController{
     bdManager: WSDatabase;
 
     constructor(db:WSDatabase){
@@ -18,18 +20,19 @@ export class GameController implements IGameController{
     }
 
     /*Update room list*/
-    updateRoomsList = async (connectionID:string): Promise<WSServerResponceHandler> => {
+    updateRoomsList = async (): Promise<WSServerResponceHandler> => {
         const room_list:update_room_res = await this.bdManager.getRooms();
         const wrapper_rooms:WSServerResponce = {
             type:"update_room",
             data:JSON.stringify(room_list),
             id:MAIN_ID
         }
-        return { type:'all', data: wrapper_rooms, connectionID };
+        return { type:'all', data: wrapper_rooms, connectionID:'' };
     }
 
     /*Registrate User*/
-    registrateUser = async (data:any, connectionID:string): Promise<Array<WSServerResponceHandler>> =>{
+    registrateUser = async (data:{name:string, password:string}, connectionID:string): Promise<Array<WSServerResponceHandler>> =>{
+        let responces:Array<WSServerResponceHandler> = [ ];
         let res_data:reg_res | {} = {};
         let error_status = false;
         try{
@@ -96,7 +99,7 @@ export class GameController implements IGameController{
             data:JSON.stringify(res_data),
             id:MAIN_ID
         }
-        let responces:Array<WSServerResponceHandler> = [ { type:'single', data: wrapper_reg, connectionID } ];
+        responces.push({ type:'single', data: wrapper_reg, connectionID });
         if(!error_status){
             const winners:Array<{
                 name:string,
@@ -108,7 +111,7 @@ export class GameController implements IGameController{
                 id:MAIN_ID
             }
             responces.push({ type:'all', data: wrapper_winners, connectionID });
-            const update_rooms_responce = await this.updateRoomsList(connectionID);
+            const update_rooms_responce = await this.updateRoomsList();
             console.log(update_rooms_responce);
             responces.push(update_rooms_responce);
         }
@@ -122,9 +125,56 @@ export class GameController implements IGameController{
             let check_room = await this.bdManager.checkRoomByConnectionID(connectionID);
             if(!check_room){
                 await this.bdManager.createRoom(connectionID);
-                const update_rooms_responce = await this.updateRoomsList(connectionID);
+                const update_rooms_responce = await this.updateRoomsList();
                 console.log(update_rooms_responce);
                 responces.push(update_rooms_responce);
+            }
+        }
+        catch(e){
+            console.log(e)
+        }
+        return responces;
+    }
+
+    /*Add user to the room*/
+    addToRoom = async (data:{indexRoom:number}, connectionID:string): Promise<Array<WSServerResponceHandler>> =>{
+        let responces:Array<WSServerResponceHandler> = [];
+        try{
+            const room = await this.bdManager.getRoomByIndex(data.indexRoom);
+            if(room&&room.firstPlayerID!==connectionID){
+                const game:Game = await this.bdManager.createGame(room.firstPlayerID, connectionID);
+                console.log(game, 'game')
+                await this.bdManager.deleteRoomByIndex(room.index);
+
+                const first_player_responce:create_game_res = {
+                    idGame: game.index,
+                    idPlayer: 0
+                }
+                const wrapper_first_player:WSServerResponce = {
+                    type:"create_game",
+                    data:JSON.stringify(first_player_responce),
+                    id:MAIN_ID
+                }
+                responces.push({ type:'single', data: wrapper_first_player, connectionID:game.firstPlayerID })
+
+
+                const second_player_responce:create_game_res = {
+                    idGame: game.index,
+                    idPlayer: 1
+                }
+                const wrapper_second_player:WSServerResponce = {
+                    type:"create_game",
+                    data:JSON.stringify(second_player_responce),
+                    id:MAIN_ID
+                }
+                responces.push({ type:'single', data: wrapper_second_player, connectionID:game.secondPlayerID })
+
+                const update_rooms_responce = await this.updateRoomsList();
+                console.log(update_rooms_responce);
+
+
+                responces.push(update_rooms_responce);
+
             }
         }
         catch(e){

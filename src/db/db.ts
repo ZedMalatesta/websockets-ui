@@ -8,12 +8,14 @@ export class WSDatabase implements IWSDatabase{
     rooms: Room[];
     games: Game[];
     roomsIndex: number;
+    gamesIndex: number;
 
     constructor(){
         this.users = [];
         this.rooms = [];
         this.games = [];
         this.roomsIndex = 0;
+        this.gamesIndex = 0;
     }
     
 
@@ -82,14 +84,12 @@ export class WSDatabase implements IWSDatabase{
         return active_rooms;
     } 
 
-
     async checkRoomByConnectionID(connectionID:string):Promise<boolean>{
         const room = this.rooms.find((room: Room)=>{
             return room.firstPlayerID===connectionID ? true : false
         })
         return room ? true : false;
     }
-
 
     async updatePlayersState(name:string, connectionID:string):Promise<Player>{
         const user_index = this.users.findIndex((user: Player)=>{
@@ -109,6 +109,30 @@ export class WSDatabase implements IWSDatabase{
         const newRoom = new Room(this.roomsIndex, connectionID);
         this.rooms.push(newRoom);
         this.roomsIndex++;
+    }
+
+    async getRoomByIndex(index:number):Promise<Room>{
+        console.log(index)
+        console.log(this.rooms)
+        console.log("@@@@@@@@@@@@@@@")
+        const room = this.rooms.find((room: Room)=>{
+            return room.index===index
+        })
+        return room as Room;
+    }
+
+    async deleteRoomByIndex(roomIndex:number):Promise<void>{
+        const deleteIndex = this.rooms.findIndex((room: Room)=>{
+            return room.index===roomIndex
+        })
+        this.rooms.splice(deleteIndex, 1);
+    }
+
+    async createGame(firstConnectID:string, secondConnectID:string):Promise<Game>{
+        const newGame = new Game(this.gamesIndex, firstConnectID, secondConnectID)
+        this.games.push(newGame);
+        this.gamesIndex++;
+        return newGame;
     }
     /*
     getUsersList(name:string){

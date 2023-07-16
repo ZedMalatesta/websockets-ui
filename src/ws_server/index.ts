@@ -6,13 +6,13 @@ import { parse } from 'path';
 import { SpecifiedWebSocket } from '../types/SpecSocket.js'
 import { randomBytes } from 'crypto'; 
 import { WSDatabase } from '../db/db.js';
-import { GameController } from '../controller/controller.js'
+import { ServerController } from '../controller/controller.js'
 import { WSServerResponce, WSServerResponceHandler } from '../types/WSServerResponce.js';
 import { router } from '../router/router.js'
 
 export const wss = new WebSocketServer({ port: 3000 });
 const db = new WSDatabase();
-const controller = new GameController(db);
+const controller = new ServerController(db);
 
 wss.on('connection', (ws: SpecifiedWebSocket) => {
   console.log(`new connection`)
