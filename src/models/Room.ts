@@ -1,18 +1,19 @@
 
 import { createHash } from 'crypto';
-import { IPlayer } from './User.js'
-import { Player } from './User';
+import { Player } from './User.js';
  
 export interface IRoom {
-    FirstPlayer: IPlayer;
-    SecondPlayer: IPlayer;
+    firstPlayerID: string;
+    secondPlayerID: string;
 }
 
+/*
 export class Room implements IRoom{
-    FirstPlayer: IPlayer;
+    firstPlayerID: string;
     SecondPlayer: IPlayer;
 
     constructor(FirstPlayer:IPlayer){
         this.FirstPlayer = FirstPlayer;
     }
 }
+*/

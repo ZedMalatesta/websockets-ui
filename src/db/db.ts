@@ -24,23 +24,32 @@ export class WSDatabase implements IWSDatabase{
         })
     }*/
 
-    getUserByName(name:string):Player | undefined{
+    async getUserByName(name:string):Promise<Player | undefined>{
         const user = this.users.find((user: Player)=>{
             user.name === name;
         })
         return user;
     } 
 
-    updatePlayer(name:string, password:string, connectionID:string):Player{
-        const newUser = new Player(name, password, connectionID)
-        this.users.push(newUser);
-        return  newUser;
+    async getWinners(name:string):Promise<Player | undefined>{
+        const user = this.users.find((user: Player)=>{
+            user.name === name;
+        })
+        return user;
+    } 
+
+    async updatePlayersState(name:string, connectionID:string):Promise<Player>{
+        const user_index = this.users.findIndex((user: Player)=>{
+            user.name === name;
+        })
+        this.users[user_index].updateConnectionID(connectionID);
+        return this.users[user_index];
     }
 
-    createPlayer(name:string, password:string, connectionID:string):Player{
-        const newUser = new Player(name, password, connectionID)
+    async createPlayer(name:string, password:string, connectionID:string):Promise<Player>{
+        const newUser = new Player(name, password, this.users.length+1, connectionID)
         this.users.push(newUser);
-        return  newUser;
+        return newUser;
     }
     /*
     getUsersList(name:string){

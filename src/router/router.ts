@@ -1,24 +1,28 @@
-import { GameController } from "../controller/controller";\
+import { GameController } from "../controller/controller.js";
 import { SocketData } from '../types/SocketData.js';
-import { WSServerResponce, WSServerResponcesBunch } from "../types/WSServerResponce.js";
+import { WSServerResponce, WSServerResponceHandler } from "../types/WSServerResponce.js";
 
 
-export const router = async (ws_data: SocketData, connectionID:string, controller: GameController): Promise<WSServerResponcesBunch>  => {
+export const router = async (ws_data: SocketData, connectionID:string, controller: GameController): Promise<Array<WSServerResponceHandler>> => {
     let responces:Array<WSServerResponce> = [];
     try{
+        let data = JSON.parse(ws_data.data);
         switch(ws_data.type) { 
             case 'reg': { 
-                console.log("proceed");
-                return await controller.registrateUser(ws_data.data, connectionID);
+                return await controller.registrateUser(data, connectionID);
+               break; 
             } 
+            case 'create_room':{
+                
+            }
             default: { 
                //statements; 
                break; 
             } 
          } 
-         return { responces: responces } 
+         return []
     }
     catch(e){
-        return { responces: responces } 
+        return []
     }
 }

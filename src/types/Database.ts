@@ -1,5 +1,5 @@
-import { IRoom } from "../models/Room";
-import { IUser } from "../types/User";
+import { IRoom } from "../models/Room.js";
+import { IPlayer } from "../types/User.js";
 
 export interface IDatabase {
     /*getByField<T>(value:any, field:string, storage:Array<T>):T | undefined;*/
@@ -7,6 +7,6 @@ export interface IDatabase {
 }
 
 export interface IWSDatabase extends IDatabase {
-    users: Array<IUser>;
+    users: Array<IPlayer>;
     rooms: Array<IRoom>;
 }

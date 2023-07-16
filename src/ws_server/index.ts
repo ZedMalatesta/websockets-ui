@@ -7,7 +7,8 @@ import { SpecifiedWebSocket } from '../types/SpecSocket.js'
 import { randomBytes } from 'crypto'; 
 import { WSDatabase } from '../db/db.js';
 import { GameController } from '../controller/controller.js'
-import { WSServerResponce } from '../types/WSServerResponce.js';
+import { WSServerResponce, WSServerResponceHandler } from '../types/WSServerResponce.js';
+import { router } from '../router/router.js'
 
 export const wss = new WebSocketServer({ port: 3000 });
 const db = new WSDatabase();
@@ -16,13 +17,15 @@ const controller = new GameController(db);
 wss.on('connection', (ws: SpecifiedWebSocket) => {
   console.log(`new connection`)
   ws.id = randomBytes(20).toString('hex');
+  console.log(ws.id)
 
   ws.on('message', async (rawdata:string) => {
     try{
       const parsed_data = await JSON.parse(rawdata);
+      console.log(parsed_data, "data")
       if('type' in parsed_data){
         const result = await router(parsed_data as SocketData, ws.id, controller);
-        if('responces' in result) await handleResult(result);
+        if(result.length>0) await handleResult(result);
       }
       else{
         throw new Error('Incorrect data!')
@@ -37,7 +40,7 @@ wss.on('connection', (ws: SpecifiedWebSocket) => {
   //ws.send('something');
 });
 
-async function handleResult(responces: Array<WSServerResponce>) {
+async function handleResult(responces: Array<WSServerResponceHandler>) {
   for(let responce of responces){
     if(responce.type==='all'){
       for(let client of wss.clients){
@@ -52,5 +55,4 @@ async function handleResult(responces: Array<WSServerResponce>) {
       client?.send(JSON.stringify(responce.data))
     }
   }
-
 }

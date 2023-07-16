@@ -1,11 +1,11 @@
-export interface WSServerResponceData{
+export interface WSServerResponce{
     type: string;
     id: number;
-    data: { [key: string]: string | number | boolean | Array<any> };
+    data: string;
 }
 
-export interface WSServerResponce{
+export interface WSServerResponceHandler{
     type: 'single' | 'all';
     connectionID: string;
-    data: WSServerResponceData;
+    data: WSServerResponce
 }
