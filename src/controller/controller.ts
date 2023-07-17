@@ -33,6 +33,20 @@ export class ServerController implements IServerController{
         return { type:'all', data: wrapper_rooms, connectionID:'' };
     }
 
+    /*Update winners list*/
+    updateWinnersList = async (): Promise<WSServerResponceHandler> => {
+        const winners:Array<{
+            name:string,
+            wins:number
+        }> = await this.bdManager.getWinners();
+        const wrapper_winners:WSServerResponce = {
+            type:"update_winners",
+            data:JSON.stringify(winners),
+            id:MAIN_ID
+        }
+        return { type:'all', data: wrapper_winners, connectionID:'' };
+    }
+
     /*Registrate User*/
     registrateUser = async (data:{name:string, password:string}, connectionID:string): Promise<Array<WSServerResponceHandler>> =>{
         let responces:Array<WSServerResponceHandler> = [ ];
@@ -104,18 +118,9 @@ export class ServerController implements IServerController{
         }
         responces.push({ type:'single', data: wrapper_reg, connectionID });
         if(!error_status){
-            const winners:Array<{
-                name:string,
-                wins:number
-            }> = await this.bdManager.getWinners();
-            const wrapper_winners:WSServerResponce = {
-                type:"update_winners",
-                data:JSON.stringify(winners),
-                id:MAIN_ID
-            }
-            responces.push({ type:'all', data: wrapper_winners, connectionID });
+            const winner_responce = await this.updateWinnersList();
+            responces.push(winner_responce);
             const update_rooms_responce = await this.updateRoomsList();
-            console.log(update_rooms_responce);
             responces.push(update_rooms_responce);
         }
         return responces;
@@ -129,7 +134,6 @@ export class ServerController implements IServerController{
             if(!check_room){
                 await this.bdManager.createRoom(connectionID);
                 const update_rooms_responce = await this.updateRoomsList();
-                console.log(update_rooms_responce);
                 responces.push(update_rooms_responce);
             }
         }
@@ -172,9 +176,6 @@ export class ServerController implements IServerController{
                 responces.push({ type:'single', data: wrapper_second_player, connectionID:game.secondPlayerID })
 
                 const update_rooms_responce = await this.updateRoomsList();
-                console.log(update_rooms_responce);
-
-
                 responces.push(update_rooms_responce);
 
             }
@@ -248,5 +249,7 @@ export class ServerController implements IServerController{
         return responces;   
     }
 
-    //handleAttack = async
+    handleAttack = async () =>{
+
+    }
 }
