@@ -3,6 +3,7 @@ import { WSServerResponceHandler, WSServerResponce } from '../types/WSServerResp
 import { MAIN_ID } from '../types/contants.js'
 import { Player } from '../models/User.js';
 import { Game } from '../models/Game.js'
+import { ships } from '../types/ships.js'
 
 interface IServerController {
     bdManager: WSDatabase;
@@ -11,6 +12,8 @@ interface IServerController {
 type reg_res = { name:string, index:number, error:string, errorMessage:string};
 type update_room_res = Array<{ roomId: number, roomUsers: Array<{ name:string, index:number }> }>;
 type create_game_res = { idGame: number, idPlayer: number };
+type start_game_res = { ships:ships, currentPlayerIndex:number };
+type turn_res = { currentPlayer:number };
 
 export class ServerController implements IServerController{
     bdManager: WSDatabase;
@@ -143,7 +146,6 @@ export class ServerController implements IServerController{
             const room = await this.bdManager.getRoomByIndex(data.indexRoom);
             if(room&&room.firstPlayerID!==connectionID){
                 const game:Game = await this.bdManager.createGame(room.firstPlayerID, connectionID);
-                console.log(game, 'game')
                 await this.bdManager.deleteRoomByIndex(room.index);
 
                 const first_player_responce:create_game_res = {
@@ -182,4 +184,69 @@ export class ServerController implements IServerController{
         }
         return responces;
     }
+
+    updateTurn = (currentTurn:number, firstId:string, secondId:string):WSServerResponceHandler[] => {
+        const turn_responce:turn_res = {
+            currentPlayer:currentTurn
+        }
+        const wrapper_turn:WSServerResponce = {
+            type:"start_game",
+            data:JSON.stringify(turn_responce),
+            id:MAIN_ID
+        }
+        return [
+            { type:'single', data: wrapper_turn, connectionID:firstId },
+            { type:'single', data: wrapper_turn, connectionID:secondId }
+        ]
+    }
+
+    addShips = async (
+        data:{
+            gameId:number, 
+            ships:ships,
+            indexPlayer:number
+        }) =>{
+        let responces:Array<WSServerResponceHandler> = [];
+        try{
+            let result:Game | void = await this.bdManager.updateGameShips(data.gameId, data.ships, data.indexPlayer);
+            if(result){
+                const first_player_ships:start_game_res = {
+                    currentPlayerIndex:0,
+                    ships:result.firstPlayerShipsMessage
+                }
+                const second_player_ships:start_game_res = {
+                    currentPlayerIndex:1,
+                    ships:result.secondPlayerShipsMessage
+                }
+
+                const wrapper_start_first:WSServerResponce = {
+                    type:"start_game",
+                    data:JSON.stringify(first_player_ships),
+                    id:MAIN_ID
+                }
+                responces.push(
+                { type:'single', data: wrapper_start_first, connectionID:result.firstPlayerID },
+                { type:'single', data: wrapper_start_first, connectionID:result.secondPlayerID }
+                )
+
+                const wrapper_start_second:WSServerResponce = {
+                    type:"start_game",
+                    data:JSON.stringify(second_player_ships),
+                    id:MAIN_ID
+                }
+                responces.push(
+                { type:'single', data: wrapper_start_second, connectionID:result.firstPlayerID },
+                { type:'single', data: wrapper_start_second, connectionID:result.secondPlayerID }
+                )
+
+                responces.push(...this.updateTurn(result.playersTurn, result.firstPlayerID, result.secondPlayerID))
+            }
+        }
+        catch(e){
+            console.log(e)
+        }
+        return responces;   
+    }
+
+    //handleAttack = async
 }

@@ -17,6 +17,9 @@ export const router = async (ws_data: SocketData, connectionID:string, controlle
             case 'add_user_to_room':{
                 return await controller.addToRoom(data, connectionID);
             }
+            case 'add_ships':{
+                return await controller.addShips(data)
+            }
             default: { 
                 return [];
             } 

@@ -2,6 +2,7 @@ import { IWSDatabase } from '../types/Database.js';
 import { Player } from '../models/User.js';
 import { Room } from '../models/Room.js';
 import { Game } from '../models/Game.js';
+import { ships } from '../types/ships.js';
 
 export class WSDatabase implements IWSDatabase{
     users: Player[];
@@ -71,7 +72,6 @@ export class WSDatabase implements IWSDatabase{
             roomUsers:Array<{ name:string, index:number }>
         }> = [];
         this.rooms.forEach(async (room:Room)=>{
-            console.log('users', this.users)
             let user = await this.getUserByConnectionID(room.firstPlayerID);
             active_rooms.push({
                 roomId:room.index,
@@ -93,7 +93,7 @@ export class WSDatabase implements IWSDatabase{
 
     async updatePlayersState(name:string, connectionID:string):Promise<Player>{
         const user_index = this.users.findIndex((user: Player)=>{
-            user.name === name;
+            return user.name === name ? true : false
         })
         this.users[user_index].updateConnectionID(connectionID);
         return this.users[user_index];
@@ -112,9 +112,6 @@ export class WSDatabase implements IWSDatabase{
     }
 
     async getRoomByIndex(index:number):Promise<Room>{
-        console.log(index)
-        console.log(this.rooms)
-        console.log("@@@@@@@@@@@@@@@")
         const room = this.rooms.find((room: Room)=>{
             return room.index===index
         })
@@ -133,6 +130,13 @@ export class WSDatabase implements IWSDatabase{
         this.games.push(newGame);
         this.gamesIndex++;
         return newGame;
+    }
+
+    async updateGameShips(index:number, date:ships, playerIndex:number):Promise<Game | void>{
+        const game_index = this.games.findIndex((game: Game)=>{
+            return game.index === index ? true : false
+        })
+        return this.games[game_index].fillShips(date, playerIndex);
     }
     /*
     getUsersList(name:string){
