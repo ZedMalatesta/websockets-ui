@@ -79,7 +79,6 @@ export class ServerController implements IServerController{
             const player:Player | undefined = await this.bdManager.getUserByName(data.name as string);
             if(player){ 
                 if(player.isActive){
-                    this.bdManager.updatePlayersState(player.name, connectionID);
                     res_data = {
                         'name':'',
                         'index':'',
