@@ -38,11 +38,13 @@ export class ServerController implements IServerController{
 
     /*Update winners list*/
     updateWinnersList = async (): Promise<WSServerResponceHandler> => {
-        const winners:Array<{
+        let winners:Array<{
             name:string,
             wins:number
         }> = await this.bdManager.getWinners()
-        winners.sort((a,b) => (a.wins > b.wins) ? 1 : ((b.wins > a.wins) ? -1 : 0));
+        console.log("виннеры", winners)
+        winners=winners.sort((a,b) => (a.wins < b.wins) ? 1 : ((b.wins < a.wins) ? -1 : 0));
+        console.log("виннеры", winners)
         const wrapper_winners:WSServerResponce = {
             type:"update_winners",
             data:JSON.stringify(winners),
@@ -76,7 +78,16 @@ export class ServerController implements IServerController{
             }*/
             const player:Player | undefined = await this.bdManager.getUserByName(data.name as string);
             if(player){ 
-                if(player.verifyPassword(data.password)){
+                if(player.isActive){
+                    this.bdManager.updatePlayersState(player.name, connectionID);
+                    res_data = {
+                        'name':'',
+                        'index':'',
+                        'error':true,
+                        'errorMessage':'AlreadyOpened'
+                    }
+                }
+                else if(player.verifyPassword(data.password)){
                     this.bdManager.updatePlayersState(player.name, connectionID);
                     res_data = {
                         'name':player.name,
@@ -185,6 +196,33 @@ export class ServerController implements IServerController{
 
             }
         }
+        catch(e){
+            console.log(e)
+        }
+        return responces;
+    }
+
+
+        /*Add user to the boot game*/
+    addToRoomBot = async (data:{indexRoom:number}, connectionID:string): Promise<Array<WSServerResponceHandler>> =>{
+            let responces:Array<WSServerResponceHandler> = [];
+            try{
+                const game:Game = await this.bdManager.createGame(connectionID, '', true);;
+                await this.bdManager.deleteRoomByConnectionID(connectionID);
+                const first_player_responce:create_game_res = {
+                    idGame: game.index,
+                    idPlayer: 0
+                }
+                const wrapper_first_player:WSServerResponce = {
+                    type:"create_game",
+                    data:JSON.stringify(first_player_responce),
+                    id:MAIN_ID
+                }
+                responces.push({ type:'single', data: wrapper_first_player, connectionID:game.firstPlayerID })
+                const update_rooms_responce = await this.updateRoomsList();
+                responces.push(update_rooms_responce);
+                
+            }
         catch(e){
             console.log(e)
         }
@@ -367,6 +405,43 @@ export class ServerController implements IServerController{
                 console.log("currentTURN", result.game.playersTurn)
                 responces.push(...this.updateTurn(result.game.playersTurn, result.game.firstPlayerID, result.game.secondPlayerID))
             }
+        }
+        catch(e){
+            console.log(e)
+        }
+        return responces;   
+    }
+
+    /*Clear connections*/
+    clearConnections = async (connectionID:string) =>{
+        let responces:Array<WSServerResponceHandler> = [];
+        try{
+            await this.bdManager.destroyPlayersState(connectionID);
+            await this.bdManager.deleteRoomByConnectionID(connectionID);
+            const update_rooms_responce = await this.updateRoomsList();
+            responces.push(update_rooms_responce);
+            const result:Game | void = await this.bdManager.findGameByConnection(connectionID)
+            if(result){
+                const winPlayer = result.firstPlayerID===connectionID ? 1 : 0;
+                const sendId = result.firstPlayerID===connectionID ? result.secondPlayerID : result.firstPlayerID;
+
+                let data_send:win_res = {
+                    winPlayer: winPlayer
+                }
+                const wrapper_finish:WSServerResponce = {
+                    type:"finish",
+                    data:JSON.stringify(data_send),
+                    id:MAIN_ID
+                }
+                responces.push(
+                    { type:'single', data: wrapper_finish, connectionID:sendId }
+                )
+                await this.bdManager.updatePlayersWins(sendId);
+                const winner_responce = await this.updateWinnersList();
+                responces.push(winner_responce);
+                return responces;
+            }
+
         }
         catch(e){
             console.log(e)

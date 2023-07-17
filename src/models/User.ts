@@ -22,8 +22,14 @@ export class Player implements IPlayer{
     }
 
     updateConnectionID(id: string):void{
-        this.connectionID = id;
-        this.isActive = true;
+        if(id){
+            this.connectionID = id;
+            this.isActive = true;
+        }
+        else{
+            this.connectionID = '';
+            this.isActive = false;
+        }
     }
 
     updateWins():void{

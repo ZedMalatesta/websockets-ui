@@ -13,11 +13,13 @@ export class Game extends Room{
     firstPlayerShipsMessage: ships;
     secondPlayerShipsMessage: ships;
     isWin: boolean;
+    isBotGame: boolean;
 
     constructor(
         index:number, 
         firstPlayerID:string, 
-        secondPlayerID:string 
+        secondPlayerID:string,
+        isBotGame:boolean = false 
         ){
         super(index, firstPlayerID);
         this.secondPlayerID = secondPlayerID;
@@ -29,6 +31,11 @@ export class Game extends Room{
         this.firstPlayerShipsMessage = [];
         this.secondPlayerShipsMessage = [];
         this.isWin = false;
+        this.isBotGame = isBotGame;    
+    }
+
+    checkConnections(connectionID:string):boolean{
+        return connectionID===this.secondPlayerID||connectionID===this.firstPlayerID
     }
 
     fillShips(

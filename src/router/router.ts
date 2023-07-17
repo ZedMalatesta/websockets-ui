@@ -26,6 +26,9 @@ export const router = async (ws_data: SocketData, connectionID:string, controlle
             case 'randomAttack':{
                 return await controller.randomAttack(data) 
             }
+            case 'single_play':{
+                return await controller.addToRoomBot(data, connectionID) 
+            }
             default: { 
                 return [];
             } 

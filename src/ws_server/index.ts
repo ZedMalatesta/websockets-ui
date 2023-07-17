@@ -14,6 +14,7 @@ export const wss = new WebSocketServer({ port: 3000 });
 const db = new WSDatabase();
 const controller = new ServerController(db);
 
+
 wss.on('connection', (ws: SpecifiedWebSocket) => {
   console.log(`new connection`)
   ws.id = randomBytes(20).toString('hex');
@@ -35,7 +36,11 @@ wss.on('connection', (ws: SpecifiedWebSocket) => {
       console.log('Error: ' + e)
     }
   });
-
+  ws.on('close', async()=>{
+    console.log("close connection")
+    let result = await controller.clearConnections(ws.id);
+    if(result.length>0) await handleResult(result);
+  })
   ws.on('error', console.error);
   //ws.send('something');
 });
@@ -55,7 +60,25 @@ async function handleResult(responces: Array<WSServerResponceHandler>) {
         return spec_elem.id===responce.connectionID ? true : false;
       })
       //console.log('client', JSON.stringify(responce.data))
-      client?.send(JSON.stringify(responce.data))
+      if(client){
+        client.send(JSON.stringify(responce.data))
+      }
     }
   }
 }
+/*
+function ping(){
+  setInterval(()=>{
+    console.log("pinging clients")
+    for(let client of wss.clients){
+      let spec_client = client as SpecifiedWebSocket;
+      console.log(spec_client.id)
+      if(client.readyState !== 1) {
+        controller.clearConnections(spec_client.id);
+        console.log("connection is closed");
+      }
+    }
+  }, 10000)
+}
+
+ping();*/
