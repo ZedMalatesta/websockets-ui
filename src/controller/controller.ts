@@ -4,6 +4,7 @@ import { MAIN_ID } from '../types/contants.js'
 import { Player } from '../models/User.js';
 import { Game } from '../models/Game.js'
 import { ships } from '../types/ships.js'
+import { attackFeedback } from '../types/attackFeedback.js'
 
 interface IServerController {
     bdManager: WSDatabase;
@@ -14,6 +15,7 @@ type update_room_res = Array<{ roomId: number, roomUsers: Array<{ name:string, i
 type create_game_res = { idGame: number, idPlayer: number };
 type start_game_res = { ships:ships, currentPlayerIndex:number };
 type turn_res = { currentPlayer:number };
+type attack_res = { position:{x:number,y:number}, currentPlayer:number, status:"miss"|"killed"|"shot" };
 
 export class ServerController implements IServerController{
     bdManager: WSDatabase;
@@ -151,6 +153,7 @@ export class ServerController implements IServerController{
             if(room&&room.firstPlayerID!==connectionID){
                 const game:Game = await this.bdManager.createGame(room.firstPlayerID, connectionID);
                 await this.bdManager.deleteRoomByIndex(room.index);
+                await this.bdManager.deleteRoomByConnectionID(connectionID);
 
                 const first_player_responce:create_game_res = {
                     idGame: game.index,
@@ -191,7 +194,7 @@ export class ServerController implements IServerController{
             currentPlayer:currentTurn
         }
         const wrapper_turn:WSServerResponce = {
-            type:"start_game",
+            type:"turn",
             data:JSON.stringify(turn_responce),
             id:MAIN_ID
         }
@@ -240,6 +243,7 @@ export class ServerController implements IServerController{
                 { type:'single', data: wrapper_start_second, connectionID:result.secondPlayerID }
                 )
 
+                console.log("currentTURN", result.playersTurn)
                 responces.push(...this.updateTurn(result.playersTurn, result.firstPlayerID, result.secondPlayerID))
             }
         }
@@ -249,7 +253,45 @@ export class ServerController implements IServerController{
         return responces;   
     }
 
-    handleAttack = async () =>{
+    handleAttack = async (
+        data:{
+            gameId:number, 
+            x:number,
+            y:number,
+            indexPlayer:number
+        }) =>{
+        let responces:Array<WSServerResponceHandler> = [];
+        try{
+            console.log("poehali")
+            const result:attackFeedback | void = await this.bdManager.updateGameAttack(data.gameId, data.x, data.y, data.indexPlayer);
+            if(result){
+                for(let responce of result.responces){
+                    let data_send:attack_res = {
+                        position: {
+                            x: Number(responce.position.split('')[0]),
+                            y: Number(responce.position.split('')[1]),
+                        },
+                        currentPlayer:data.indexPlayer,
+                        status:responce.status
+                    }
 
+                    const wrapper_feedback:WSServerResponce = {
+                        type:"attack",
+                        data:JSON.stringify(data_send),
+                        id:MAIN_ID
+                    }
+                    responces.push(
+                        { type:'single', data: wrapper_feedback, connectionID:result.game.firstPlayerID },
+                        { type:'single', data: wrapper_feedback, connectionID:result.game.secondPlayerID }
+                    )
+                }
+                console.log("currentTURN", result.game.playersTurn)
+                responces.push(...this.updateTurn(result.game.playersTurn, result.game.firstPlayerID, result.game.secondPlayerID))
+            }
+        }
+        catch(e){
+            console.log(e)
+        }
+        return responces;   
     }
 }

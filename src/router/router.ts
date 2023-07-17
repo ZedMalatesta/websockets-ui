@@ -20,6 +20,9 @@ export const router = async (ws_data: SocketData, connectionID:string, controlle
             case 'add_ships':{
                 return await controller.addShips(data)
             }
+            case 'attack':{
+                return await controller.handleAttack(data) 
+            }
             default: { 
                 return [];
             } 

@@ -3,6 +3,7 @@ import { Player } from '../models/User.js';
 import { Room } from '../models/Room.js';
 import { Game } from '../models/Game.js';
 import { ships } from '../types/ships.js';
+import { attackFeedback } from '../types/attackFeedback.js';
 
 export class WSDatabase implements IWSDatabase{
     users: Player[];
@@ -125,6 +126,13 @@ export class WSDatabase implements IWSDatabase{
         this.rooms.splice(deleteIndex, 1);
     }
 
+    async deleteRoomByConnectionID(connectionID:string):Promise<void>{
+        const deleteIndex = this.rooms.findIndex((room: Room)=>{
+            return room.firstPlayerID===connectionID
+        })
+        this.rooms.splice(deleteIndex, 1);
+    }
+
     async createGame(firstConnectID:string, secondConnectID:string):Promise<Game>{
         const newGame = new Game(this.gamesIndex, firstConnectID, secondConnectID)
         this.games.push(newGame);
@@ -136,7 +144,14 @@ export class WSDatabase implements IWSDatabase{
         const game_index = this.games.findIndex((game: Game)=>{
             return game.index === index ? true : false
         })
-        return this.games[game_index].fillShips(date, playerIndex);
+        return this.games[game_index].handleFillShips(date, playerIndex);
+    }
+
+    async updateGameAttack(index:number, x:number, y:number, playerIndex:number):Promise<attackFeedback | void>{
+        const game_index = this.games.findIndex((game: Game)=>{
+            return game.index === index ? true : false
+        })
+        return this.games[game_index].handleShoot(x, y, playerIndex);
     }
     /*
     getUsersList(name:string){
