@@ -72,23 +72,15 @@ export class Game extends Room{
         shipsStorage:'firstPlayerShips' | 'secondPlayerShips', 
         battleGround:'firstPlayerBG' | 'secondPlayerBG',  /* More like battleSEA :D */
         ):attackFeedback | void{
-        console.log("приходит", x, y)
-        console.log("battleGround", battleGround)
-        console.log(this[battleGround])
         const elem_index = this[battleGround].findIndex((field: string)=>{
-            console.log("field", field)
-            console.log(`${x}${y}`, 'иксигрик', x, y, `${x}${y}`==field)
             return field==`${x}${y}` ? true : false
         })
-        //console.log(this[battleGround], 'battleground prev')
-        console.log("finded", elem_index)
         if(elem_index>-1){
+            console.log(this[battleGround], 'battleground prev')
             let responces:{status:"miss"|"killed"|"shot", position:string}[] = [];
             let status = 'miss';
             for(let i=0; i<this[shipsStorage].length; i++){
-                //console.log("проходимся по кораблям", i, this[shipsStorage][i])
                 for(let j=0; j<this[shipsStorage][i].length-1; j++){
-                    //console.log("проходимся по клеткам", j, this[shipsStorage][i][j])
                     if(this[shipsStorage][i][j]===`${x}${y}`){
                         this[shipsStorage][i][this[shipsStorage][i].length-1]=Number(this[shipsStorage][i][this[shipsStorage][i].length-1])+1;
                         status='shot';
@@ -107,7 +99,8 @@ export class Game extends Room{
                                 ]
                                 console.log(potentialMisses, "потенциальное");
                                 for(let miss of potentialMisses){
-                                    if(this[battleGround].includes(miss)){
+                                    if(this[battleGround].includes(miss)&&
+                                    !this[shipsStorage][i].includes(miss)){
                                         responces.push({
                                             status:'miss',
                                             position:miss
@@ -143,7 +136,10 @@ export class Game extends Room{
                 })
                 this.playersTurn = this.playersTurn ? 0 : 1;
             }
-            this[battleGround].splice(elem_index, 1);
+            const new_index = this[battleGround].findIndex((field: string)=>{
+                return field==`${x}${y}` ? true : false
+            })
+            this[battleGround].splice(new_index, 1);
             console.log(this[battleGround], 'battleground after')
             return {
                 game:this,
@@ -160,6 +156,16 @@ export class Game extends Room{
             return playerIndex===1
             ? this.shoot(`${x}`, `${y}`, 'firstPlayerShips', 'firstPlayerBG')
             : this.shoot(`${x}`, `${y}`, 'secondPlayerShips', 'secondPlayerBG')
+        }
+    }
+
+    randomAttack(playerIndex:number):attackFeedback | void{
+        let storage:'firstPlayerBG' | 'secondPlayerBG' = playerIndex===1 ? 'firstPlayerBG' : 'firstPlayerBG';
+        let random_item = this[storage][Math.floor(Math.random()*this[storage].length)];
+        if(playerIndex===this.playersTurn){
+            return playerIndex===1
+            ? this.shoot(`${random_item.split('')[0]}`, `${random_item.split('')[1]}`, 'firstPlayerShips', 'firstPlayerBG')
+            : this.shoot(`${random_item.split('')[0]}`, `${random_item.split('')[1]}`, 'secondPlayerShips', 'secondPlayerBG')
         }
     }
     /*

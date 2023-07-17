@@ -100,6 +100,14 @@ export class WSDatabase implements IWSDatabase{
         return this.users[user_index];
     }
 
+    async updatePlayersWins(connectionID:string):Promise<void>{
+        const user_index = this.users.findIndex((user: Player)=>{
+            return user.connectionID === connectionID ? true : false
+        })
+        this.users[user_index].updateWins();
+    }
+
+
     async createPlayer(name:string, password:string, connectionID:string):Promise<Player>{
         const newUser = new Player(name, password, this.users.length+1, connectionID)
         this.users.push(newUser);
@@ -152,6 +160,20 @@ export class WSDatabase implements IWSDatabase{
             return game.index === index ? true : false
         })
         return this.games[game_index].handleShoot(x, y, playerIndex);
+    }
+
+    async updateGameRandomAttack(index:number, playerIndex:number):Promise<attackFeedback | void>{
+        const game_index = this.games.findIndex((game: Game)=>{
+            return game.index === index ? true : false
+        })
+        return this.games[game_index].randomAttack(playerIndex);
+    }
+
+    async deleteGameByIndex(index:number):Promise<void>{
+        const game_index = this.games.findIndex((game: Game)=>{
+            return game.index === index ? true : false
+        })
+        this.games.splice(game_index, 1);
     }
     /*
     getUsersList(name:string){

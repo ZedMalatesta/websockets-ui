@@ -23,6 +23,9 @@ export const router = async (ws_data: SocketData, connectionID:string, controlle
             case 'attack':{
                 return await controller.handleAttack(data) 
             }
+            case 'randomAttack':{
+                return await controller.randomAttack(data) 
+            }
             default: { 
                 return [];
             } 

@@ -42,7 +42,7 @@ wss.on('connection', (ws: SpecifiedWebSocket) => {
 
 async function handleResult(responces: Array<WSServerResponceHandler>) {
   for(let responce of responces){
-    console.log("responce", responce)
+    //console.log("responce", responce)
     if(responce.type==='all'){
       for(let client of wss.clients){
         //console.log('all', JSON.stringify(responce.data))

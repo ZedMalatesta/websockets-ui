@@ -16,6 +16,7 @@ type create_game_res = { idGame: number, idPlayer: number };
 type start_game_res = { ships:ships, currentPlayerIndex:number };
 type turn_res = { currentPlayer:number };
 type attack_res = { position:{x:number,y:number}, currentPlayer:number, status:"miss"|"killed"|"shot" };
+type win_res={ winPlayer: number };
 
 export class ServerController implements IServerController{
     bdManager: WSDatabase;
@@ -40,7 +41,8 @@ export class ServerController implements IServerController{
         const winners:Array<{
             name:string,
             wins:number
-        }> = await this.bdManager.getWinners();
+        }> = await this.bdManager.getWinners()
+        winners.sort((a,b) => (a.wins > b.wins) ? 1 : ((b.wins > a.wins) ? -1 : 0));
         const wrapper_winners:WSServerResponce = {
             type:"update_winners",
             data:JSON.stringify(winners),
@@ -265,6 +267,83 @@ export class ServerController implements IServerController{
             console.log("poehali")
             const result:attackFeedback | void = await this.bdManager.updateGameAttack(data.gameId, data.x, data.y, data.indexPlayer);
             if(result){
+                if(result.game.isWin){
+                    let data_send:win_res = {
+                        winPlayer: result.game.playersTurn
+                    }
+
+                    const wrapper_finish:WSServerResponce = {
+                        type:"finish",
+                        data:JSON.stringify(data_send),
+                        id:MAIN_ID
+                    }
+                    responces.push(
+                        { type:'single', data: wrapper_finish, connectionID:result.game.firstPlayerID },
+                        { type:'single', data: wrapper_finish, connectionID:result.game.secondPlayerID }
+                    )
+                    await this.bdManager.updatePlayersWins(result.game.playersTurn ? result.game.secondPlayerID : result.game.firstPlayerID);
+                    const winner_responce = await this.updateWinnersList();
+                    responces.push(winner_responce);
+                    return responces;
+                }
+                for(let responce of result.responces){
+                    let data_send:attack_res = {
+                        position: {
+                            x: Number(responce.position.split('')[0]),
+                            y: Number(responce.position.split('')[1]),
+                        },
+                        currentPlayer:data.indexPlayer,
+                        status:responce.status
+                    }
+
+                    const wrapper_feedback:WSServerResponce = {
+                        type:"attack",
+                        data:JSON.stringify(data_send),
+                        id:MAIN_ID
+                    }
+                    responces.push(
+                        { type:'single', data: wrapper_feedback, connectionID:result.game.firstPlayerID },
+                        { type:'single', data: wrapper_feedback, connectionID:result.game.secondPlayerID }
+                    )
+                }
+                responces.push(...this.updateTurn(result.game.playersTurn, result.game.firstPlayerID, result.game.secondPlayerID))
+            }
+        }
+        catch(e){
+            console.log(e)
+        }
+        return responces;   
+    }
+
+    randomAttack = async (
+        data:{
+            gameId:number, 
+            indexPlayer:number
+        }) =>{
+        let responces:Array<WSServerResponceHandler> = [];
+        try{
+            console.log("poehali")
+            const result:attackFeedback | void = await this.bdManager.updateGameRandomAttack(data.gameId, data.indexPlayer);
+            if(result){
+                if(result.game.isWin){
+                    let data_send:win_res = {
+                        winPlayer: result.game.playersTurn
+                    }
+                    const wrapper_finish:WSServerResponce = {
+                        type:"finish",
+                        data:JSON.stringify(data_send),
+                        id:MAIN_ID
+                    }
+                    responces.push(
+                        { type:'single', data: wrapper_finish, connectionID:result.game.firstPlayerID },
+                        { type:'single', data: wrapper_finish, connectionID:result.game.secondPlayerID }
+                    )
+                    await this.bdManager.updatePlayersWins(result.game.playersTurn ? result.game.secondPlayerID : result.game.firstPlayerID);
+                    const winner_responce = await this.updateWinnersList();
+                    responces.push(winner_responce);
+                    return responces;
+                }
+                console.log("responces", responces)
                 for(let responce of result.responces){
                     let data_send:attack_res = {
                         position: {
